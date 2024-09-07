@@ -1357,8 +1357,8 @@ class HookedTransformer(HookedRootModule):
         """Initialize weights.
 
         Initialize weights matrices with a normal of std=initializer_range (default=0.02). This
-        roughly follows the GPT-2 paper's scheme (but with truncation, and not halving the std for
-        W_pos).
+        roughly follows the GPT-2 paper's scheme by default (but with truncation, and not halving
+        the std for W_pos).
 
         LayerNorm weights are already initialized to 1.0, and all biases are initialized to 0.0
         (including LayerNorm), so this just initializes weight matrices.
@@ -1384,7 +1384,20 @@ class HookedTransformer(HookedRootModule):
 
         for name, param in self.named_parameters():
             if "W_" in name:
-                nn.init.normal_(param, std=self.cfg.initializer_range)
+                if self.cfg.weight_init_mode == "normal":
+                    nn.init.normal_(param, std=self.cfg.initializer_range)
+                elif self.cfg.weight_init_mode == "uniform":
+                    nn.init.uniform_(param, -self.cfg.initializer_range, self.cfg.initializer_range)
+                elif self.cfg.weight_init_mode == "kaiming_uniform":
+                    nn.init.kaiming_uniform_(param)
+                elif self.cfg.weight_init_mode == "xavier_uniform":
+                    nn.init.xavier_uniform_(param)
+                elif self.cfg.weight_init_mode == "xavier_normal":
+                    nn.init.xavier_normal_(param)
+                elif self.cfg.weight_init_mode == "kaiming_normal":
+                    nn.init.kaiming_normal_(param)
+                else:
+                    raise ValueError(f"Invalid weight_init_mode: {self.cfg.weight_init_mode}")
 
     def load_and_process_state_dict(
         self,

@@ -3,13 +3,14 @@
 Module with a dataclass for storing the configuration of a
 :class:`transformer_lens.HookedTransformer` model.
 """
+
 from __future__ import annotations
 
 import logging
 import pprint
 import random
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import numpy as np
 import torch
@@ -76,11 +77,6 @@ class HookedTransformerConfig:
             attention
         attn_types (List[str], *optional*): the types of attention to use for
             local attention
-        weight_init_mode (str): the initialization mode to use for the
-            weights. Only relevant for custom models, ignored for pre-trained.
-            Currently the only supported mode is 'gpt2', where biases are
-            initialized to 0 and weights are standard normals of range
-            initializer_range.
         normalization_type (str, *optional*): the type of normalization to use.
             Options are None (no normalization), 'LN' (use LayerNorm, including weights
             & biases) and 'LNPre' (use LayerNorm, but no weights & biases).
@@ -101,6 +97,22 @@ class HookedTransformerConfig:
             initialise the weights, initialized to 0.8 / sqrt(d_model) .
         init_weights (bool): Whether to initialize the weights. Defaults to
             True. If False, does not initialize weights.
+        weight_init_mode (str): the initialization mode to use for the
+            weights. Only relevant for custom models, ignored for pre-trained.
+            Currently all modes initialize biases to 0.
+            Supported modes are:
+            - 'normal', where weights are standard normals of range initializer_range.
+            - 'uniform', where weights are initialized using the uniform
+              distribution of range -initializer_range to initializer_range.
+            - 'kaiming_uniform', where weights are initialized using the Kaiming uniform
+              initialization torch.nn.init.kaiming_uniform_.
+            - 'kaiming_normal', where weights are initialized using the Kaiming normal
+              initialization torch.nn.init.kaiming_normal_.
+            - 'xavier_uniform', where weights are initialized using the Xavier uniform
+              initialization torch.nn.init.xavier_uniform_.
+            - 'xavier_normal', where weights are initialized using the Xavier normal
+              initialization torch.nn.init.xavier_normal_.
+            Defaults to normal.
         scale_attn_by_inverse_layer_idx (bool): Whether to scale the attention
             weights by 1/(layer_id+1), used by Mistral (Stanford) models for numerical stability when
             training in FP16. Defaults to False.
@@ -186,6 +198,14 @@ class HookedTransformerConfig:
     seed: Optional[int] = None
     initializer_range: float = -1.0
     init_weights: bool = True
+    weight_init_mode: Literal[
+        "normal",
+        "uniform",
+        "kaiming_uniform",
+        "xavier_uniform",
+        "xavier_normal",
+        "kaiming_normal",
+    ] = "normal"
     scale_attn_by_inverse_layer_idx: bool = False
     positional_embedding_type: str = "standard"
     final_rms: bool = False
